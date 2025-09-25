@@ -2,27 +2,54 @@ import React from 'react'
 
 const Landing = () => {
   return (
-    <div style={{ 
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      width: '100vw',
-      height: '100vh',
-      display: 'flex', 
-      flexDirection: 'column', 
-      justifyContent: 'center', 
-      alignItems: 'center', 
-      textAlign: 'center',
-      padding: '2rem',
-      boxSizing: 'border-box'
-    }}>
-      <img 
-        src="src/assets/logo.png" 
-        alt="Aioli Logo" 
-        style={{ width: '80px', height: 'auto' }}
-      />
-      <p>Aioli is a platform for creating and sharing AI-powered conversations.</p>
-      <button>Get Started</button>
+    <div>
+        <div style={{
+            width: '100%',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '2rem',
+            boxSizing: 'border-box',
+        }}>
+        <img 
+            src="src/assets/logo.png" 
+            alt="Aioli Logo" 
+            style={{ width: '300px', height: 'auto' }}
+        />
+        </div>
+        <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '2rem',
+            maxWidth: '2000px',
+            margin: '0 auto',
+            padding: '0 2rem'
+        }}>
+            <img
+            src="src/assets/food.jpeg"
+            alt="Aioli Logo"
+            style={{ width: '700px', height: 'auto', borderRadius: '10px'}}
+        />
+        <div>
+            <p style={{ fontSize: '1.25rem', fontWeight: 'bold' }}> Turn your random ingredients into restaurant-quality meals with just a photo.  
+                AI instantly recognizes what's in your kitchen, then pairs you with a conversational cooking 
+                assistant who guides you step-by-step through personalized recipes. 
+                Cooking has never been this smart or simple.</p>
+            <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'center' }}>
+                <button style={{ 
+                    padding: '0.75rem 1.5rem', 
+                    fontSize: '1rem', 
+                    background: 'linear-gradient(to right, #004d00, #006400)',
+                    color: '#fff', 
+                    border: 'none', 
+                    borderRadius: '6px', 
+                    cursor: 'pointer', 
+                    borderColor: '#004d00',
+                    fontWeight: 'bold',
+                }}>Get Started</button>
+            </div>
+        </div>
+        </div>
     </div>
   )
 }
