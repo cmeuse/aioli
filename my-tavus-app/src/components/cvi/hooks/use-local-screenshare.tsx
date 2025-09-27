@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useDaily, useLocalSessionId, useScreenVideoTrack } from '@daily-co/daily-react';
+import { useDaily, useLocalSessionId, useScreenVideoTrack, useCallState } from '@daily-co/daily-react';
 
 export const useLocalScreenshare = (): {
 	isScreenSharing: boolean;
@@ -7,15 +7,21 @@ export const useLocalScreenshare = (): {
 	onToggleScreenshare: () => void;
 } => {
 	const daily = useDaily();
+	const callState = useCallState();
 	const localSessionId = useLocalSessionId();
 	const { isOff } = useScreenVideoTrack(localSessionId);
 	const isScreenSharing = !isOff;
 
 	const onToggleScreenshare = useCallback(() => {
+		if (!daily || callState !== 'joined') {
+			console.warn('Cannot start screen share: call not joined yet');
+			return;
+		}
+
 		if (isScreenSharing) {
-			daily?.stopScreenShare();
+			daily.stopScreenShare();
 		} else {
-			daily?.startScreenShare({
+			daily.startScreenShare({
 				displayMediaOptions: {
 					audio: false,
 					selfBrowserSurface: 'exclude',
@@ -27,7 +33,7 @@ export const useLocalScreenshare = (): {
 				},
 			});
 		}
-	}, [daily, isScreenSharing]);
+	}, [daily, callState, isScreenSharing]);
 
 	return {
 		isScreenSharing,

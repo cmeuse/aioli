@@ -1,6 +1,12 @@
-import React from 'react'
+import { useNavigate } from 'react-router-dom'
 
 const Landing = () => {
+  const navigate = useNavigate()
+
+  const handleGetStarted = () => {
+    navigate('/analyze')
+  }
+
   return (
     <div>
         <div style={{
@@ -36,17 +42,22 @@ const Landing = () => {
                 assistant who guides you step-by-step through personalized recipes. 
                 Cooking has never been this smart or simple.</p>
             <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'center' }}>
-                <button style={{ 
-                    padding: '0.75rem 1.5rem', 
-                    fontSize: '1rem', 
-                    background: 'linear-gradient(to right, #004d00, #006400)',
-                    color: '#fff', 
-                    border: 'none', 
-                    borderRadius: '6px', 
-                    cursor: 'pointer', 
-                    borderColor: '#004d00',
-                    fontWeight: 'bold',
-                }}>Get Started</button>
+                <button 
+                    onClick={handleGetStarted}
+                    style={{ 
+                        padding: '0.75rem 1.5rem', 
+                        fontSize: '1rem', 
+                        background: 'linear-gradient(to right, #004d00, #006400)',
+                        color: '#fff', 
+                        border: 'none', 
+                        borderRadius: '6px', 
+                        cursor: 'pointer', 
+                        borderColor: '#004d00',
+                        fontWeight: 'bold',
+                    }}
+                >
+                    Get Started
+                </button>
             </div>
         </div>
         </div>
