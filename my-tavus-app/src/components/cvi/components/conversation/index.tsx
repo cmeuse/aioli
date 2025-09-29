@@ -108,7 +108,7 @@ export const Conversation = React.memo(({ onLeave, conversationUrl }: Conversati
 	// Initialize call when conversation is available
 	useEffect(() => {
 		joinCall({ url: conversationUrl });
-	}, []);
+	}, [conversationUrl, joinCall]);
 
 	const handleLeave = useCallback(() => {
 		leaveCall();

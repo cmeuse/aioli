@@ -26,6 +26,7 @@ const ImageProcess = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [conversationUrl, setConversationUrl] = useState<string | null>(null)
+  const [conversationId, setConversationId] = useState<string | null>(null)
   const [isInConversation, setIsInConversation] = useState(false)
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -92,14 +93,25 @@ const ImageProcess = () => {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to setup conversation')
+        const errorData = await response.json()
+        console.error('API Error:', errorData)
+        
+        if (response.status === 400 && errorData.message?.includes('maximum concurrent conversations')) {
+          setError('You have reached the maximum number of active conversations. Please end existing conversations and try again.')
+        } else if (response.status === 402) {
+          setError('Cooking assistant credits have been exhausted. Please try again later.')
+        } else {
+          setError(`Failed to set up cooking assistant: ${errorData.message || 'Unknown error'}`)
+        }
+        return
       }
 
       const conversationData = await response.json()
       setConversationUrl(conversationData.conversation_url)
+      setConversationId(conversationData.conversation_id)
     } catch (err) {
       console.error('Error setting up conversation:', err)
-      setError('Failed to set up cooking assistant')
+      setError('Failed to set up cooking assistant. Please try again.')
     }
   }
 
@@ -109,9 +121,28 @@ const ImageProcess = () => {
     }
   }
 
-  const handleLeaveConversation = () => {
+  const handleLeaveConversation = async () => {
     setIsInConversation(false)
+    
+    // End the conversation on the server
+    if (conversationId) {
+      try {
+        await fetch('/api/end-conversation', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            conversation_id: conversationId
+          })
+        })
+      } catch (err) {
+        console.error('Error ending conversation:', err)
+      }
+    }
+    
     setConversationUrl(null)
+    setConversationId(null)
   }
 
   const handleRecipeExtracted = (recipe: ExtractedRecipe) => {
@@ -163,7 +194,6 @@ const ImageProcess = () => {
 
   return (
     <div style={{
-      maxWidth: '800px',
       margin: '0 auto',
       padding: '2rem',
       fontFamily: 'Arial, sans-serif',
@@ -177,7 +207,9 @@ const ImageProcess = () => {
       position: 'absolute',
       left: '50%',
       top: '50%',
-      transform: 'translate(-50%, -50%)'
+      transform: 'translate(-50%, -50%)',
+      minHeight: '100vh',
+      background: 'linear-gradient(to bottom, #ffffff 0%, #ffffff 70%, #004d00 100%)',
     }}>
       <div style={{ marginBottom: '2rem' }}>
         <button
@@ -185,67 +217,78 @@ const ImageProcess = () => {
           style={{
             padding: '0.5rem 1rem',
             fontSize: '0.9rem',
-            background: 'transparent',
-            color: '#004d00',
+            background: '#004d00',
+            color: 'white',
             border: '2px solid #004d00',
             borderRadius: '6px',
             cursor: 'pointer',
             fontWeight: 'bold',
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem'
+            gap: '0.5rem',
+            position: 'fixed',
+            top: '1rem',
+            left: '1rem'
           }}
         >
           ← Back to Home
         </button>
       </div>
-      <h2 style={{
-        textAlign: 'center',
-        color: '#004d00',
-        marginBottom: '2rem',
-        fontSize: '2rem'
-      }}>
-        Upload Image for Ingredient Analysis
-      </h2>
+      {!conversationUrl && (
+        <>
+          <h2 style={{
+            textAlign: 'center',
+            color: '#004d00',
+            fontSize: '2rem',
+            marginBottom: '2rem'
+          }}>
+            Snap A Picture of Your Ingredients
+            <br />
+            And Leave the Rest to Us
+          </h2>
 
       {/* File Upload */}
-      <div style={{
-        border: '2px dashed #004d00',
-        borderRadius: '10px',
-        padding: '2rem',
-        textAlign: 'center',
-        marginBottom: '2rem',
-        backgroundColor: '#f9f9f9'
-      }}>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handleFileSelect}
-          style={{ display: 'none' }}
-          id="image-upload"
-        />
-        <label
-          htmlFor="image-upload"
-          style={{
-            display: 'inline-block',
-            padding: '1rem 2rem',
-            background: 'linear-gradient(to right, #004d00, #006400)',
-            color: '#fff',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontSize: '1.1rem',
-            fontWeight: 'bold'
-          }}
-        >
-          Choose Image
-        </label>
-        <p style={{ marginTop: '1rem', color: '#666' }}>
-          Upload a photo of ingredients to get started
-        </p>
-      </div>
+      {!previewUrl && (
+        <div style={{
+          border: '2px dashed #004d00',
+          borderRadius: '10px',
+          padding: '2rem',
+          textAlign: 'center',
+          marginBottom: '2rem',
+          backgroundColor: '#f9f9f9'
+        }}>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleFileSelect}
+            style={{ display: 'none' }}
+            id="image-upload"
+          />
+          <label
+            htmlFor="image-upload"
+            style={{
+              display: 'inline-block',
+              padding: '1rem 2rem',
+              background: 'linear-gradient(to right, #004d00, #006400)',
+              color: '#fff',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '1.1rem',
+              fontWeight: 'bold'
+            }}
+          >
+            Choose Image
+          </label>
+          <p style={{ marginTop: '1rem', color: '#666' }}>
+            Upload a photo of ingredients to get started
+          </p>
+        </div>
+      )}
+        </>
+      )}
 
       {/* Image Preview */}
-      {previewUrl && (
+      {previewUrl && !conversationUrl && (
         <div style={{
           textAlign: 'center',
           marginBottom: '2rem'
@@ -264,24 +307,48 @@ const ImageProcess = () => {
       )}
 
       {/* Analyze Button */}
-      {selectedFile && (
+      {selectedFile && !conversationUrl && (
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <button
-            onClick={analyzeImage}
-            disabled={loading}
-            style={{
-              padding: '1rem 2rem',
-              fontSize: '1.1rem',
-              background: loading ? '#ccc' : 'linear-gradient(to right, #004d00, #006400)',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              fontWeight: 'bold'
-            }}
-          >
-            {loading ? 'Analyzing...' : 'Analyze Ingredients'}
-          </button>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+            <button
+              onClick={analyzeImage}
+              disabled={loading}
+              style={{
+                padding: '1rem 2rem',
+                fontSize: '1.1rem',
+                background: loading ? '#ccc' : 'linear-gradient(to right, #004d00, #006400)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                fontWeight: 'bold'
+              }}
+            >
+              {loading ? 'Analyzing...' : 'Analyze Ingredients'}
+            </button>
+            <button
+              onClick={() => {
+                setSelectedFile(null)
+                setPreviewUrl(null)
+                setAnalysis(null)
+                setError(null)
+                setConversationUrl(null)
+                setConversationId(null)
+              }}
+              style={{
+                padding: '1rem 2rem',
+                fontSize: '1.1rem',
+                background: '#6c757d',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 'bold'
+              }}
+            >
+              Reupload Image
+            </button>
+          </div>
         </div>
       )}
 

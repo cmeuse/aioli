@@ -28,11 +28,10 @@ app.post('/api/setup-cooking-conversation', async (req, res) => {
     
     // Check if Tavus API key is available
     if (!process.env.VITE_TAVUS_API_KEY) {
-      console.warn('TAVUS_API_KEY not found, returning mock data')
-      return res.json({
-        conversation_url: 'mock://conversation-url',
-        persona: { id: existingPersonaId, name: 'Cooking Assistant' },
-        ingredients: ingredients || []
+      console.error('TAVUS_API_KEY not found')
+      return res.status(500).json({
+        error: 'Server configuration error',
+        message: 'Tavus API key not configured'
       })
     }
     
@@ -52,12 +51,11 @@ app.post('/api/setup-cooking-conversation', async (req, res) => {
       console.error(`Tavus API error ${personaResponse.status}: ${errorText}`)
       console.error(`Request details: URL=${personaResponse.url}, Headers=${JSON.stringify({ 'x-api-key': process.env.VITE_TAVUS_API_KEY?.substring(0, 10) + '...' })}`)
       
-      // Return mock data instead of throwing error
-      console.warn('Tavus API failed, returning mock data due to API error')
-      return res.json({
-        conversation_url: 'mock://conversation-url',
-        persona: { id: existingPersonaId, name: 'Cooking Assistant' },
-        ingredients: ingredients || []
+      // Return proper error response
+      return res.status(personaResponse.status).json({
+        error: 'Failed to fetch persona',
+        message: errorText,
+        status: personaResponse.status
       })
     }
 
@@ -89,12 +87,11 @@ app.post('/api/setup-cooking-conversation', async (req, res) => {
       const errorText = await conversationResponse.text()
       console.error(`Tavus conversation API error ${conversationResponse.status}: ${errorText}`)
       
-      // Return mock data instead of throwing error
-      console.warn('Tavus conversation API failed, returning mock data')
-      return res.json({
-        conversation_url: 'mock://conversation-url',
-        persona: { id: existingPersonaId, name: 'Cooking Assistant' },
-        ingredients: ingredients || []
+      // Return proper error response
+      return res.status(conversationResponse.status).json({
+        error: 'Failed to create conversation',
+        message: errorText,
+        status: conversationResponse.status
       })
     }
 
@@ -278,6 +275,14 @@ app.post('/api/analyze-ingredients', async (req, res) => {
     
     console.log('Base64 image length:', base64Image?.length || 0)
 
+    // Check if OpenAI API key is available
+    if (!process.env.OPENAI_API_KEY) {
+      console.error('OpenAI API key not found')
+      return res.status(500).json({ error: 'OpenAI API key not configured' })
+    }
+
+    console.log('Calling OpenAI API...')
+
     // Call OpenAI API
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -315,24 +320,37 @@ app.post('/api/analyze-ingredients', async (req, res) => {
     }
 
     const openaiData = await openaiResponse.json()
+    console.log('OpenAI response received')
     const content = openaiData.choices[0].message.content
+    console.log('OpenAI content:', content)
 
     // Try to parse the JSON response
     let ingredients
     try {
-      ingredients = JSON.parse(content)
+      // Clean the content by removing markdown code blocks
+      const cleanedContent = content
+        .replace(/```json\s*/gi, '')
+        .replace(/```\s*/g, '')
+        .trim()
+
+      console.log('Cleaned content:', cleanedContent)
+      ingredients = JSON.parse(cleanedContent)
     } catch (parseError) {
       // If parsing fails, try to extract ingredients from text
       ingredients = content.split('\n')
         .map(line => line.trim())
-        .filter(line => line && !line.startsWith('[') && !line.startsWith(']') && !line.startsWith('```'))
-        .map(line => line.replace(/^[-•]\s*/, '').replace(/[",]/g, '').trim())
-        .filter(line => line.length > 0)
+        .filter(line => line && !line.startsWith('[') && !line.startsWith(']'))
+        .map(line => line.replace(/^[-•*]\s*/, '').replace(/[",]/g, '').trim())
+        .filter(line => line.length > 0 && line !== 'ingredients' && !line.toLowerCase().includes('ingredients:'))
     }
 
     res.json({ ingredients })
   } catch (error) {
     console.error('Error analyzing ingredients:', error)
+    res.status(500).json({
+      error: 'Failed to analyze ingredients',
+      details: error.message
+    })
   }
 })
 

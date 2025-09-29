@@ -8,7 +8,10 @@ const Landing = () => {
   }
 
   return (
-    <div>
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(to bottom, #ffffff 0%, #ffffff 70%, #004d00 100%)',
+    }}>
         <div style={{
             width: '100%',
             display: 'flex',

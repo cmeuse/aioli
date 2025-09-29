@@ -2,6 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTranscription } from '../../hooks/use-transcription';
 import styles from './transcription.module.css';
 
+interface TranscriptionMessage {
+  id: string;
+  speaker: 'user' | 'assistant';
+  text: string;
+  timestamp: Date;
+}
+
 interface RecipeStep {
   step: number;
   instruction: string;
