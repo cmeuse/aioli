@@ -309,7 +309,7 @@ const ImageProcess = () => {
 
   const handleLeaveConversation = async () => {
     setIsInConversation(false)
-    
+
     // End the conversation on the server
     if (conversationId) {
       try {
@@ -326,9 +326,12 @@ const ImageProcess = () => {
         console.error('Error ending conversation:', err)
       }
     }
-    
+
     setConversationUrl(null)
     setConversationId(null)
+
+    // Navigate back to home page
+    navigate('/')
   }
 
 
