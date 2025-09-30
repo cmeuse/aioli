@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Conversation } from './components/cvi/components/conversation'
-import { Transcription } from './components/cvi/components/transcription'
 import { CVIProvider } from './components/cvi/components/cvi-provider'
 
 // Icon components
@@ -27,6 +26,24 @@ const UploadIcon = ({ className, style }: { className?: string; style?: React.CS
 const CheckCircle = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
   <svg className={className} style={style} fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+)
+
+const PlayIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
+  <svg className={className} style={style} fill="currentColor" viewBox="0 0 24 24">
+    <path d="M8 5v14l11-7z"/>
+  </svg>
+)
+
+const PauseIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
+  <svg className={className} style={style} fill="currentColor" viewBox="0 0 24 24">
+    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+  </svg>
+)
+
+const StopIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
+  <svg className={className} style={style} fill="currentColor" viewBox="0 0 24 24">
+    <path d="M6 6h12v12H6z"/>
   </svg>
 )
 
@@ -116,11 +133,11 @@ const Button = ({
 }
 
 // Card component
-const Card = ({ 
-  children, 
+const Card = ({
+  children,
   className = '',
   ...props
-}: { 
+}: {
   children: React.ReactNode
   className?: string
   [key: string]: unknown
@@ -141,19 +158,216 @@ const Card = ({
   )
 }
 
+// Timer component
+const Timer = () => {
+  const [minutes, setMinutes] = useState(0)
+  const [seconds, setSeconds] = useState(0)
+  const [totalSeconds, setTotalSeconds] = useState(0)
+  const [isRunning, setIsRunning] = useState(false)
+  const [timeLeft, setTimeLeft] = useState(0)
+
+  useEffect(() => {
+    let interval: number | null = null
+
+    if (isRunning && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimeLeft(timeLeft => {
+          if (timeLeft <= 1) {
+            setIsRunning(false)
+            // Timer finished - could add notification sound here
+            return 0
+          }
+          return timeLeft - 1
+        })
+      }, 1000)
+    }
+
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [isRunning, timeLeft])
+
+  const startTimer = () => {
+    const total = minutes * 60 + seconds
+    if (total > 0) {
+      setTotalSeconds(total)
+      setTimeLeft(total)
+      setIsRunning(true)
+    }
+  }
+
+  const pauseTimer = () => {
+    setIsRunning(false)
+  }
+
+  const resetTimer = () => {
+    setIsRunning(false)
+    setTimeLeft(0)
+  }
+
+  const formatTime = (timeInSeconds: number) => {
+    const mins = Math.floor(timeInSeconds / 60)
+    const secs = timeInSeconds % 60
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  }
+
+  const progress = totalSeconds > 0 ? ((totalSeconds - timeLeft) / totalSeconds) * 100 : 0
+
+  return (
+    <div style={{
+      background: 'hsl(0, 0%, 100%)',
+      borderRadius: '12px',
+      padding: '1rem 1.5rem',
+      boxShadow: '0 4px 20px -4px hsl(20 20% 15% / 0.1)',
+      border: '1px solid hsl(18, 15%, 88%)',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '2rem',
+      minWidth: '600px',
+    }}>
+      <h3 style={{
+        margin: '0',
+        fontSize: '1rem',
+        fontWeight: '600',
+        color: 'hsl(18, 65%, 55%)',
+        whiteSpace: 'nowrap',
+      }}>
+        Timer:
+      </h3>
+
+      {!isRunning && timeLeft === 0 ? (
+        <>
+          <div style={{
+            display: 'flex',
+            gap: '1rem',
+            alignItems: 'center',
+          }}>
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: '0.75rem',
+                fontWeight: '500',
+                color: 'hsl(20, 20%, 15%)',
+                marginBottom: '0.25rem',
+              }}>Min</label>
+              <input
+                type="number"
+                min="0"
+                max="99"
+                value={minutes}
+                onChange={(e) => setMinutes(Math.max(0, parseInt(e.target.value) || 0))}
+                style={{
+                  width: '50px',
+                  padding: '0.375rem',
+                  border: '1px solid hsl(18, 15%, 88%)',
+                  borderRadius: '6px',
+                  textAlign: 'center',
+                  fontSize: '0.875rem',
+                }}
+              />
+            </div>
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: '0.75rem',
+                fontWeight: '500',
+                color: 'hsl(20, 20%, 15%)',
+                marginBottom: '0.25rem',
+              }}>Sec</label>
+              <input
+                type="number"
+                min="0"
+                max="59"
+                value={seconds}
+                onChange={(e) => setSeconds(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))}
+                style={{
+                  width: '50px',
+                  padding: '0.375rem',
+                  border: '1px solid hsl(18, 15%, 88%)',
+                  borderRadius: '6px',
+                  textAlign: 'center',
+                  fontSize: '0.875rem',
+                }}
+              />
+            </div>
+          </div>
+          <Button
+            variant="hero"
+            onClick={startTimer}
+            disabled={minutes === 0 && seconds === 0}
+            style={{ padding: '0.5rem 1rem' }}
+          >
+            <PlayIcon style={{ width: '16px', height: '16px' }} />
+            Start
+          </Button>
+        </>
+      ) : (
+        <>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '1rem',
+          }}>
+            <div style={{
+              fontSize: '1.5rem',
+              fontWeight: 'bold',
+              color: timeLeft <= 10 ? '#ef4444' : 'hsl(18, 65%, 55%)',
+              minWidth: '80px',
+            }}>
+              {formatTime(timeLeft)}
+            </div>
+            {totalSeconds > 0 && (
+              <div style={{
+                width: '200px',
+                height: '6px',
+                background: 'hsl(18, 15%, 88%)',
+                borderRadius: '3px',
+                overflow: 'hidden',
+              }}>
+                <div style={{
+                  height: '100%',
+                  background: 'hsl(18, 65%, 55%)',
+                  width: `${progress}%`,
+                  transition: 'width 1s linear',
+                }} />
+              </div>
+            )}
+          </div>
+          <div style={{
+            display: 'flex',
+            gap: '0.5rem',
+          }}>
+            <Button
+              variant={isRunning ? "outline" : "hero"}
+              onClick={isRunning ? pauseTimer : () => setIsRunning(true)}
+              style={{ padding: '0.375rem 0.75rem' }}
+            >
+              {isRunning ? (
+                <PauseIcon style={{ width: '16px', height: '16px' }} />
+              ) : (
+                <PlayIcon style={{ width: '16px', height: '16px' }} />
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={resetTimer}
+              style={{ padding: '0.375rem 0.75rem' }}
+            >
+              <StopIcon style={{ width: '16px', height: '16px' }} />
+            </Button>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 
 interface IngredientAnalysis {
   ingredients: string[]
   confidence?: number
 }
 
-interface ExtractedRecipe {
-  title: string;
-  ingredients: string[];
-  steps: Array<{ step: number; instruction: string }>;
-  cookingTime?: string;
-  servings?: string;
-}
 
 const ImageProcess = () => {
   const navigate = useNavigate()
@@ -335,10 +549,6 @@ const ImageProcess = () => {
   }
 
 
-  const handleRecipeExtracted = (recipe: ExtractedRecipe) => {
-    // Recipe extraction is handled by the Transcription component
-    console.log('Recipe extracted:', recipe)
-  }
 
   const convertToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -354,30 +564,31 @@ const ImageProcess = () => {
     return (
       <CVIProvider>
         <div style={{
-          display: 'flex',
           height: '100vh',
           width: '100vw',
           fontFamily: 'Arial, sans-serif',
-          background: 'linear-gradient(135deg, hsl(35, 20%, 98%) 0%, hsl(35, 30%, 96%) 50%, hsl(18, 25%, 90%) 100%)',
+          background: 'linear-gradient(135deg, hsl(18, 65%, 95%) 0%, hsl(18, 65%, 80%) 50%, hsl(18, 65%, 65%) 100%)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '1.5rem',
+          boxSizing: 'border-box',
         }}>
           <div style={{
-            flex: 1,
+            width: '1100px',
+            height: 'calc(100vh - 160px)',
+            maxHeight: '700px',
             display: 'flex',
-            flexDirection: 'column'
+            alignItems: 'center',
+            justifyContent: 'center',
           }}>
-            <Conversation 
+            <Conversation
               onLeave={handleLeaveConversation}
               conversationUrl={conversationUrl}
             />
           </div>
-          <div style={{
-            width: '400px',
-            borderLeft: '1px solid hsl(18, 15%, 88%)',
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
-            <Transcription onRecipeExtracted={handleRecipeExtracted} />
-          </div>
+          <Timer />
         </div>
       </CVIProvider>
     )
