@@ -35,24 +35,43 @@ h1 {
   line-height: 1.1;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
+/* Force orange button styling */
+.custom-button {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  border: none !important;
+  outline: none !important;
+  font: inherit !important;
+  text-decoration: none !important;
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  margin: 0 !important;
+  padding: 1rem 2.5rem !important;
+  font-size: 1.25rem !important;
+  font-weight: 600 !important;
+  border-radius: 12px !important;
+  background: linear-gradient(135deg, hsl(18, 65%, 55%), hsl(18, 45%, 75%)) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 20px -4px hsl(20 20% 15% / 0.1) !important;
+  transition: all 0.3s ease !important;
+  gap: 0.5rem !important;
 }
-button:hover {
-  border-color: #646cff;
+
+.custom-button:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 25px -4px hsl(20 20% 15% / 0.15) !important;
 }
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+
+.custom-button:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.6 !important;
 }
+
+/* Global button styles removed to allow component-specific styling */
 
 @media (prefers-color-scheme: light) {
   :root {
@@ -62,7 +81,5 @@ button:focus-visible {
   a:hover {
     color: #747bff;
   }
-  button {
-    background-color: #f9f9f9;
-  }
+  /* Button styles removed */
 }
