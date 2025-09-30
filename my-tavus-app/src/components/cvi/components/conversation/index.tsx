@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from "react";
+import React, { useEffect, useCallback, useState, useRef } from "react";
 import {
 	DailyAudio,
 	DailyVideo,
@@ -6,7 +6,8 @@ import {
 	useLocalSessionId,
 	useMeetingState,
 	useScreenVideoTrack,
-	useVideoTrack
+	useVideoTrack,
+	useDaily
 } from "@daily-co/daily-react";
 import { MicSelectBtn, CameraSelectBtn, ScreenShareButton } from '../device-select'
 import { useLocalScreenshare } from "../../hooks/use-local-screenshare";
@@ -98,6 +99,10 @@ export const Conversation = React.memo(({ onLeave, conversationUrl }: Conversati
 	const { joinCall, leaveCall } = useCVICall();
 	const meetingState = useMeetingState();
 	const { hasMicError } = useDevices()
+	const daily = useDaily();
+	const replicaIds = useReplicaIDs();
+	const replicaVideoState = useVideoTrack(replicaIds[0]);
+	const hasUnmutedRef = useRef(false);
 
 	useEffect(() => {
 		if (meetingState === 'error') {
@@ -109,6 +114,26 @@ export const Conversation = React.memo(({ onLeave, conversationUrl }: Conversati
 	useEffect(() => {
 		joinCall({ url: conversationUrl });
 	}, [conversationUrl, joinCall]);
+
+	// Unmute audio once replica video is ready and loaded
+	useEffect(() => {
+		if (
+			daily &&
+			replicaIds[0] &&
+			replicaVideoState.track &&
+			!replicaVideoState.isOff &&
+			replicaVideoState.track.readyState === 'live' &&
+			!hasUnmutedRef.current
+		) {
+			// Add a small delay to ensure video rendering has started
+			const timer = setTimeout(() => {
+				hasUnmutedRef.current = true;
+				daily.setLocalAudio(true);
+			}, 500);
+
+			return () => clearTimeout(timer);
+		}
+	}, [daily, replicaIds, replicaVideoState]);
 
 	const handleLeave = useCallback(() => {
 		leaveCall();

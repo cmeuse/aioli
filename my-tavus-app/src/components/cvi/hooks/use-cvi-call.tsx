@@ -18,6 +18,7 @@ export const useCVICall = (): {
 						},
 					},
 				},
+				startAudioOff: true,
 			});
 		},
 		[daily]
