@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Conversation } from './components/cvi/components/conversation'
 import { Transcription } from './components/cvi/components/transcription'
@@ -28,6 +28,56 @@ const ImageProcess = () => {
   const [conversationUrl, setConversationUrl] = useState<string | null>(null)
   const [conversationId, setConversationId] = useState<string | null>(null)
   const [isInConversation, setIsInConversation] = useState(false)
+  const [endingAllConversations, setEndingAllConversations] = useState(false)
+
+  // Cleanup function to end conversation when component unmounts or user navigates away
+  useEffect(() => {
+    const cleanup = async () => {
+      if (conversationId) {
+        try {
+          // Use sendBeacon for reliable cleanup on page unload
+          const data = JSON.stringify({ conversation_id: conversationId })
+          const blob = new Blob([data], { type: 'application/json' })
+          
+          if (navigator.sendBeacon) {
+            navigator.sendBeacon('/api/end-conversation', blob)
+            console.log('Conversation cleanup sent via sendBeacon')
+          } else {
+            // Fallback for browsers that don't support sendBeacon
+            await fetch('/api/end-conversation', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: data,
+              keepalive: true
+            })
+            console.log('Conversation ended on cleanup')
+          }
+        } catch (err) {
+          console.error('Error ending conversation on cleanup:', err)
+        }
+      }
+    }
+
+    // Handle page unload (refresh, navigation) - sendBeacon works for these
+    const handleBeforeUnload = () => {
+      cleanup()
+    }
+
+    // Handle component unmount (navigation away)
+    const handleUnload = () => {
+      cleanup()
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    
+    // Return cleanup function for component unmount
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+      handleUnload()
+    }
+  }, [conversationId])
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -143,6 +193,40 @@ const ImageProcess = () => {
     
     setConversationUrl(null)
     setConversationId(null)
+  }
+
+  const endAllConversations = async () => {
+    setEndingAllConversations(true)
+    setError(null)
+    
+    try {
+      const response = await fetch('/api/end-all-conversations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to end conversations')
+      }
+
+      const result = await response.json()
+      
+      if (result.success) {
+        setError(`Successfully ended ${result.endedCount} out of ${result.totalCount} conversations`)
+        // Clear current conversation state
+        setIsInConversation(false)
+        setConversationUrl(null)
+        setConversationId(null)
+      } else {
+        setError(`Failed to end conversations: ${result.error}`)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred while ending conversations')
+    } finally {
+      setEndingAllConversations(false)
+    }
   }
 
   const handleRecipeExtracted = (recipe: ExtractedRecipe) => {
@@ -338,10 +422,12 @@ const ImageProcess = () => {
               style={{
                 padding: '1rem 2rem',
                 fontSize: '1.1rem',
-                background: '#6c757d',
-                color: '#fff',
-                border: 'none',
+                background: 'white',
+                color: '#004d00',
+                borderColor: '#004d00',
                 borderRadius: '6px',
+                borderWidth: '2px',
+                borderStyle: 'solid',
                 cursor: 'pointer',
                 fontWeight: 'bold'
               }}
@@ -372,7 +458,10 @@ const ImageProcess = () => {
           backgroundColor: '#f0f8f0',
           padding: '2rem',
           borderRadius: '10px',
-          border: '2px solid #004d00'
+          border: '2px solid #004d00',
+          width: '90vw',
+          maxWidth: '900px',
+          minWidth: '600px'
         }}>
           <h3 style={{
             color: '#004d00',
@@ -383,9 +472,10 @@ const ImageProcess = () => {
           </h3>
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '1rem',
-            marginBottom: '1.5rem'
+            gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
+            gap: '0.5rem',
+            marginBottom: '1.5rem',
+            width: '100%'
           }}>
             {analysis.ingredients.map((ingredient, index) => (
               <div

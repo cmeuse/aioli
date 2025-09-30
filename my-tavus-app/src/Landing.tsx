@@ -40,7 +40,7 @@ const Landing = () => {
             style={{ width: '700px', height: 'auto', borderRadius: '10px'}}
         />
         <div>
-            <p style={{ fontSize: '1.25rem', fontWeight: 'bold' }}> Turn your random ingredients into restaurant-quality meals with just a photo.  
+            <p style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#004d00' }}> Turn your random ingredients into restaurant-quality meals with just a photo.  
                 AI instantly recognizes what's in your kitchen, then pairs you with a conversational cooking 
                 assistant who guides you step-by-step through personalized recipes. 
                 Cooking has never been this smart or simple.</p>

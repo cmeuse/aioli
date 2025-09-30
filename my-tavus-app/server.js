@@ -255,6 +255,71 @@ app.post('/api/end-conversation', async (req, res) => {
   }
 })
 
+// API endpoint to end all active conversations
+app.post('/api/end-all-conversations', async (req, res) => {
+  try {
+    if (!process.env.VITE_TAVUS_API_KEY) {
+      return res.json({ success: true, message: 'No API key provided', endedCount: 0 })
+    }
+
+    // First, get all conversations
+    const listResponse = await fetch('https://tavusapi.com/v2/conversations', {
+      method: 'GET',
+      headers: {
+        'x-api-key': process.env.VITE_TAVUS_API_KEY,
+      },
+      signal: AbortSignal.timeout(10000)
+    })
+
+    if (!listResponse.ok) {
+      const errorText = await listResponse.text()
+      console.error(`Failed to list conversations: ${listResponse.status} - ${errorText}`)
+      return res.json({ success: false, error: errorText })
+    }
+
+    const conversationsData = await listResponse.json()
+    const conversations = conversationsData.conversations || []
+
+    // End all conversations
+    const endPromises = conversations.map(async (conversation) => {
+      try {
+        const endResponse = await fetch(`https://tavusapi.com/v2/conversations/${conversation.id}/end`, {
+          method: 'POST',
+          headers: {
+            'x-api-key': process.env.VITE_TAVUS_API_KEY,
+            'Content-Type': 'application/json',
+          },
+          signal: AbortSignal.timeout(10000)
+        })
+        
+        if (endResponse.ok) {
+          console.log(`Successfully ended conversation ${conversation.id}`)
+          return { success: true, id: conversation.id }
+        } else {
+          console.error(`Failed to end conversation ${conversation.id}: ${endResponse.status}`)
+          return { success: false, id: conversation.id, error: endResponse.status }
+        }
+      } catch (error) {
+        console.error(`Error ending conversation ${conversation.id}:`, error)
+        return { success: false, id: conversation.id, error: error.message }
+      }
+    })
+
+    const results = await Promise.all(endPromises)
+    const successfulEnds = results.filter(r => r.success).length
+
+    res.json({ 
+      success: true, 
+      endedCount: successfulEnds,
+      totalCount: conversations.length,
+      results: results
+    })
+  } catch (error) {
+    console.error('Error ending all conversations:', error)
+    res.json({ success: false, error: error.message })
+  }
+})
+
 // API endpoint for ingredient analysis
 app.post('/api/analyze-ingredients', async (req, res) => {
   try {
