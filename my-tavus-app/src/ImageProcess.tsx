@@ -28,7 +28,6 @@ const ImageProcess = () => {
   const [conversationUrl, setConversationUrl] = useState<string | null>(null)
   const [conversationId, setConversationId] = useState<string | null>(null)
   const [isInConversation, setIsInConversation] = useState(false)
-  const [endingAllConversations, setEndingAllConversations] = useState(false)
 
   // Cleanup function to end conversation when component unmounts or user navigates away
   useEffect(() => {
@@ -195,39 +194,6 @@ const ImageProcess = () => {
     setConversationId(null)
   }
 
-  const endAllConversations = async () => {
-    setEndingAllConversations(true)
-    setError(null)
-    
-    try {
-      const response = await fetch('/api/end-all-conversations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to end conversations')
-      }
-
-      const result = await response.json()
-      
-      if (result.success) {
-        setError(`Successfully ended ${result.endedCount} out of ${result.totalCount} conversations`)
-        // Clear current conversation state
-        setIsInConversation(false)
-        setConversationUrl(null)
-        setConversationId(null)
-      } else {
-        setError(`Failed to end conversations: ${result.error}`)
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred while ending conversations')
-    } finally {
-      setEndingAllConversations(false)
-    }
-  }
 
   const handleRecipeExtracted = (recipe: ExtractedRecipe) => {
     // Recipe extraction is handled by the Transcription component
