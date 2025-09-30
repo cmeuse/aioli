@@ -63,7 +63,7 @@ const Button = ({
   disabled?: boolean
   [key: string]: unknown
 }) => {
-  const baseStyles = {
+  const baseStyles: React.CSSProperties = {
     padding: '1rem 2.5rem',
     fontSize: '1.25rem',
     fontWeight: '600',
@@ -75,7 +75,6 @@ const Button = ({
     alignItems: 'center',
     justifyContent: 'center',
     gap: '0.5rem',
-    appearance: 'none',
     outline: 'none',
     textDecoration: 'none',
     userSelect: 'none',
