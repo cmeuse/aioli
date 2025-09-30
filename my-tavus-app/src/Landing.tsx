@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import foodImage from './assets/food.jpeg'
 
 // Icon components
 const ChefHat = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
@@ -175,7 +176,7 @@ const Landing = () => {
           <div>
             <div style={{ position: 'relative' }}>
               <img
-                src="src/assets/food.jpeg"
+                src={foodImage}
                 alt="Fresh cooking ingredients on a marble countertop"
                 style={{
                   width: '100%',
